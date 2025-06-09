@@ -11,6 +11,5 @@ public class spring_mass_unrealTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V5;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_5;
 		ExtraModuleNames.Add("spring_mass_unreal");
-
 	}
 }
