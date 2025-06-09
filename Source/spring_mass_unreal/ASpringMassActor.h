@@ -4,6 +4,11 @@
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent.h"
 
+#include "DrawDebugHelpers.h"
+#include "GameFramework/Character.h"
+#include "Math/UnrealMathUtility.h"
+#include "KismetProceduralMeshLibrary.h"
+
 #include "particle_system.h"
 #include "particle_simulator.h"
 
@@ -13,6 +18,7 @@
 // - seperate cloth and swing into seperate actor classes that inharet from SpringMassActor
 // - change cloth overlap to a trigger function
 // - check degen triangles on procedural cloth mesh
+// - play with decressed weights for cloth sim / rework cloth sim units
 // - standerdize varible names .-.
 UCLASS(Blueprintable)
 class SPRING_MASS_UNREAL_API ASpringMassActor : public AActor
@@ -55,7 +61,7 @@ public:
 	void OnHold(FVector charPos, FVector hitPos, double stringLen);
 
 	UFUNCTION(BlueprintCallable)
-	void OnRelease();
+	FVector OnRelease();
 	UFUNCTION(BlueprintCallable)
 	FVector SwingTick(double DeltaTime, FVector playerVel);
 
@@ -76,6 +82,7 @@ public:
 	TArray<int32> Triangles;
 	TArray<FVector> Normals;
 	TArray<FVector2D> UVs;
+	TArray<FVector> DummyTangent;
 	TArray<FProcMeshTangent> Tangents;
 	TArray<FColor> VertexColors;
 };

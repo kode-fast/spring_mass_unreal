@@ -2,18 +2,22 @@
 #pragma once
 
 #include "ASpringMassActor.h"
-#include "DrawDebugHelpers.h"
-#include "GameFramework/Character.h"
-#include "Math/UnrealMathUtility.h"
+
+
 
 
 // sets default values
 ASpringMassActor::ASpringMassActor()
 {
 	// THESE NEED TO BE IN THE CONSTRUCTOR
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// TODO check what ones of these we actualy need now
+	PrimaryActorTick.TickGroup = TG_PostPhysics;
+	PrimaryActorTick.bStartWithTickEnabled = true;
 	PrimaryActorTick.bCanEverTick = true;
-	 
+	PrimaryActorTick.bTickEvenWhenPaused = true;
+
+	PrimaryActorTick.bAllowTickOnDedicatedServer = true;
+
 	// create procedural mesh
 	Mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ClothMesh"));
 	// attach to root component (the actor)
@@ -22,6 +26,8 @@ ASpringMassActor::ASpringMassActor()
 }
 void ASpringMassActor::EnableClothCollision()
 {
+	// enable overlap flags
+	// TODO double check these for neccesity 
 	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Mesh->SetCollisionObjectType(ECC_WorldDynamic);
 	Mesh->SetCollisionResponseToAllChannels(ECR_Overlap);
@@ -50,26 +56,31 @@ void ASpringMassActor::SetClothSim(int width, int hight, int panel_size, double 
 {
 
 	// add vertices to mesh
+	// build uvs at the same time 
 	for (int j = 0; j < hight; j++) {
 
 
 		for (int i = 0; i < width; i++) {
 
-			Vertices.Add(FVector(FMath::FRandRange(0.0, 10.0), i * panel_size, -j * panel_size));
+			FVector2D uv;
+			uv[0] = i;  // Xposition / width
+			uv[1] = -j; // Ypostion / height
+			UVs.Add(uv);
+			//FMath::FRandRange(0.0, 10.0)
+			Vertices.Add(FVector(0.0, i * panel_size, -j * panel_size));
 			UE_LOG(LogTemp, Display, TEXT("ADDING VERTEX AT %s"), *FVector(0, i * panel_size, j * panel_size).ToString());
 		}
 
 	}
 
 	// add triangles
-	// for each Vertex
-
-	int count = 0;
-	for (int i = 0; i < Vertices.Num(); i++) {
+	// for each Vertex up to the bottom row
+	int row_count = 0;
+	for (int i = 0; i < Vertices.Num() - width; i++) {
 		UE_LOG(LogTemp, Display, TEXT("LOOP %d"), i);
 
-		if (count + 2 > width) {
-			count = 0;
+		if (row_count + 2 > width) {
+			row_count = 0;
 			continue;
 		}
 
@@ -78,17 +89,22 @@ void ASpringMassActor::SetClothSim(int width, int hight, int panel_size, double 
 
 		Triangles.Append({ i + width, i + width + 1, i });
 		Triangles.Append({ i, i + width + 1, i + 1 });
-		count++;
+		row_count++;
 	}
 
 
-	Normals.Init(FVector(0, 0, 1), Vertices.Num());
 
-	UVs.Init(FVector2D(0, 0), Vertices.Num());
+	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(Vertices, Triangles, UVs, Normals, Tangents);
 
-	Tangents.Init(FProcMeshTangent(1, 0, 0), Vertices.Num());
 
-	VertexColors.Init(FColor::White, Vertices.Num());
+	// Normals.Init(FVector(0, 0, 1), Vertices.Num());
+
+	// UVs.Init(FVector2D(0, 0), Vertices.Num());
+
+	// Tangents.Init(FProcMeshTangent(1, 0, 0), Vertices.Num());
+
+	VertexColors.Init(FColor(1,1,1,1), Vertices.Num());
+
 
 	Mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, VertexColors, Tangents, true);
 
@@ -101,10 +117,12 @@ void ASpringMassActor::SetClothSim(int width, int hight, int panel_size, double 
 
 	// TODO expose mass as editble varible too
 	// positions number of partiels mass - mass need to be big - units are all weird 
-	particles = ParticleSystem(Vertices, Vertices.Num(), 100.0);
+	// 
+	// 100.0 good weight
+	particles = ParticleSystem(Vertices, Vertices.Num(), 18.0);
 
 
-	// fix the top row with spacing 
+	// fix points on the top row with spacing 
 	for (int i = 0; i < width; i = i + pin_spacing) {
 		particles.particles[i].fixed = true;
 	}
@@ -282,8 +300,8 @@ void ASpringMassActor::ClothTick(double DeltaTime, FVector outsideForce)
 	if (OverlappingActors.Num() > 0) 
 	{
 		//UE_LOG(LogTemp, Display, TEXT("CHAR VEL %s"), *OverlappingActors[0]->GetVelocity().ToString());
-
-		simulation.step(0.0, DeltaTime, 50*OverlappingActors[0]->GetVelocity());
+		// increse velocity and only react to xy velocity)
+		simulation.step(0.0, DeltaTime, FVector(18.0,18.0,0.0)*OverlappingActors[0]->GetVelocity());
 	} 
 	else 
 	{
@@ -318,15 +336,20 @@ void ASpringMassActor::OnHold(FVector charPos, FVector hitPos, double stringLen)
 	TArray<FVector> particle = { charPos, hitPos };
 	particles = ParticleSystem(particle,2,5.0);
 	particles.particles[1].fixed = true;
-	particles.setSpring(0, 1, 1.0, 5.0, 50.0);
+	particles.setSpring(0, 1, 1.0, 10.0, 30.0);
 	simulation = ParticleSimulator(&particles);
 
 }
 
-void ASpringMassActor::OnRelease() {
-
+FVector ASpringMassActor::OnRelease() {
+	FVector final_vel = FVector(0.0, 0.0, 0.0);
+	if (swing) {
+		final_vel = particles.particles[0].vel;
+	}
 	swing = false;
 	
+	// return end velocity of particles
+	return final_vel;
 }
 
 FVector ASpringMassActor::SwingTick(double DeltaTime, FVector playerVel) 

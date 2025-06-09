@@ -19,7 +19,7 @@ ParticleSimulator::ParticleSimulator(ParticleSystem* p)
 	Gks = 300;
 	Gkd = 50;
 	// gravity
-	g = -10.0;
+	g = -80.0;
 	// global drag coefficient
 	kdrag = 1.0;
 	// number of particles in simulation
@@ -53,6 +53,7 @@ int ParticleSimulator::step(double time, double deltaTime, FVector outside_vel)
 {
 
 	timeStep = deltaTime;
+	//timeStep = 1/60.0;
 	// bool col;
 	// FVector gravForce;
 	// FVector dragForce;
@@ -369,6 +370,8 @@ void ParticleSimulator::springsForce()
 		tmp = forceDirc * (float)system->springs[i].restLen;
 		tmp = tmp - disVec;
 
+
+		// TODO see if adjusting for time step works
 		SpringForce = tmp * (float)system->springs[i].ks;
 
 		// -------- DAMPER FORCE ---------
