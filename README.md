@@ -4,9 +4,8 @@ Source and Blueprints of Unreal demo project
 
 This project integrates a custom spring mass physics system into Unreal Engine 5 and combines it with blueprints to implement cloth simulation and grappling hook game mechanics.
 
-![Alt text](./ReadMeImages/cloth2.gif)
+<img src="./ReadMeImages/cloth2.gif" width="100%" />
 
-![Alt text](./ReadMeImages/cloth1.gif)
+<img src="./ReadMeImages/cloth1.gif" width="100%" />
 
-![Alt text](./ReadMeImages/grapple1.gif)
-
+<img src="./ReadMeImages/grapple1.gif" width="100%" />
