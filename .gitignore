@@ -8,3 +8,4 @@ Saved/
 .vsconfig
 spring_mass_unreal.sln
 spring_mass_unreal.uproject
+PackagedGame/Windows/Engine/Extras/GPUDumpViewer
